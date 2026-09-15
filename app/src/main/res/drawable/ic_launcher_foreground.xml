@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Icône cargo/ship simplifiée -->
+    <group
+        android:translateX="22"
+        android:translateY="30">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M32,8L32,40L0,40L0,8L32,8ZM28,12L4,12L4,36L28,36L28,12Z"/>
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M16,0L48,18L48,22L16,40L16,0ZM20,6L20,34L40,20L20,6Z"/>
+    </group>
+</vector>

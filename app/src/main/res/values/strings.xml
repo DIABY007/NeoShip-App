@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NeoShip Coursier</string>
+    <string name="login_title">Connexion Coursier</string>
+    <string name="email_label">Email</string>
+    <string name="password_label">Mot de passe</string>
+    <string name="login_button">Se connecter</string>
+    <string name="login_error">Email ou mot de passe invalide</string>
+    <string name="login_loading">Connexion…</string>
+    <string name="deliveries_title">Mes courses</string>
+    <string name="navigate_button">Naviguer</string>
+    <string name="validate_button">Valider la livraison</string>
+    <string name="otp_hint">Code à 4 chiffres</string>
+    <string name="otp_error">Code incorrect</string>
+    <string name="otp_success">Livraison validée ✓</string>
+    <string name="tracking_notification_title">NeoShip Tracking</string>
+    <string name="tracking_notification_body">Position en cours d\'enregistrement</string>
+</resources>

@@ -243,7 +243,7 @@ private fun DeliveryCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = delivery.id,
+                    text = delivery.shortId,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface

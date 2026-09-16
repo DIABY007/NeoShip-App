@@ -6,32 +6,27 @@ import com.neoship.courier.data.api.models.GpsUpdateRequest
 
 /**
  * Repository d'envoi des positions GPS.
- * Poste les coordonnées vers /api/gps/update.
- * Les erreurs réseau sont silencieuses (le tracking ne doit pas s'arrêter si une requête échoue).
+ * POST /api/gps/update avec les coordonnées.
+ * Rate limit : 30 req/min côté serveur — notre intervalle de 10s (6 req/min) est sûr.
  */
-class GpsRepository {
-
+class GpsRepository(
+    private val authRepository: AuthRepository
+) {
     private val api = RetrofitClient.apiService
 
-    /**
-     * Envoie une position au backend.
-     * @return true si l'envoi a réussi, false sinon
-     */
-    suspend fun sendLocation(
-        location: Location,
-        courierId: String
-    ): Boolean {
+    suspend fun sendLocation(location: Location): Boolean {
         return try {
+            val token = authRepository.getToken()
+                ?: return false
+
             val request = GpsUpdateRequest(
                 latitude = location.latitude,
                 longitude = location.longitude,
-                timestamp = System.currentTimeMillis(),
-                courierId = courierId
+                deliveryId = null // Optionnel — associé à une course plus tard
             )
-            val response = api.updateGps(request)
+            val response = api.updateGps("Bearer $token", request)
             response.isSuccessful
         } catch (e: Exception) {
-            // Échec réseau — on ne coupe pas le tracking pour autant
             false
         }
     }

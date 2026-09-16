@@ -256,9 +256,9 @@ private fun DeliveryCard(
                 Surface(
                     shape = MaterialTheme.shapes.small,
                     color = when (delivery.status) {
-                        "assignée" -> MaterialTheme.colorScheme.tertiaryContainer
-                        "en_cours" -> MaterialTheme.colorScheme.secondaryContainer
-                        "livrée" -> MaterialTheme.colorScheme.primaryContainer
+                        "assigned" -> MaterialTheme.colorScheme.tertiaryContainer
+                        "in_progress" -> MaterialTheme.colorScheme.secondaryContainer
+                        "delivered" -> MaterialTheme.colorScheme.primaryContainer
                         else -> MaterialTheme.colorScheme.surfaceVariant
                     }
                 ) {
@@ -268,9 +268,9 @@ private fun DeliveryCard(
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Medium,
                         color = when (delivery.status) {
-                            "assignée" -> MaterialTheme.colorScheme.onTertiaryContainer
-                            "en_cours" -> MaterialTheme.colorScheme.onSecondaryContainer
-                            "livrée" -> MaterialTheme.colorScheme.onPrimaryContainer
+                            "assigned" -> MaterialTheme.colorScheme.onTertiaryContainer
+                            "in_progress" -> MaterialTheme.colorScheme.onSecondaryContainer
+                            "delivered" -> MaterialTheme.colorScheme.onPrimaryContainer
                             else -> MaterialTheme.colorScheme.onSurfaceVariant
                         }
                     )

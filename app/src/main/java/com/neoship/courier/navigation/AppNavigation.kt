@@ -1,10 +1,17 @@
 package com.neoship.courier.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -15,7 +22,6 @@ import com.neoship.courier.data.local.CompletedDeliveriesStorage
 import com.neoship.courier.data.local.TokenManager
 import com.neoship.courier.data.repository.AuthRepository
 import com.neoship.courier.data.repository.DeliveryRepository
-import com.neoship.courier.model.Delivery
 import com.neoship.courier.ui.deliveries.DeliveryListScreen
 import com.neoship.courier.ui.deliveries.DeliveryListViewModel
 import com.neoship.courier.ui.deliverydetail.DeliveryDetailScreen
@@ -41,11 +47,10 @@ private const val KEY_VALIDATED_DELIVERY = "validated_delivery"
 fun AppNavHost(
     navController: NavHostController,
     tokenManager: TokenManager,
-    completedDeliveriesStorage: CompletedDeliveriesStorage,
-    deliveries: List<Delivery>
+    completedDeliveriesStorage: CompletedDeliveriesStorage
 ) {
     val authRepository = remember { AuthRepository(tokenManager) }
-    val deliveryRepository = remember { DeliveryRepository() }
+    val deliveryRepository = remember { DeliveryRepository(authRepository) }
 
     val startDest = if (!authRepository.isLoggedIn()) {
         Routes.LOGIN
@@ -136,9 +141,26 @@ fun AppNavHost(
             )
         ) { backStackEntry ->
             val deliveryId = backStackEntry.arguments?.getString("deliveryId") ?: return@composable
-            val delivery = deliveries.find { it.id == deliveryId }
 
-            if (delivery == null) {
+            // Charge la course depuis l'API (ou fallback mock)
+            var delivery by remember { mutableStateOf<com.neoship.courier.model.Delivery?>(null) }
+            var loading by remember { mutableStateOf(true) }
+
+            LaunchedEffect(deliveryId) {
+                val result = deliveryRepository.getDeliveries()
+                delivery = result.getOrNull()?.find { it.id == deliveryId }
+                loading = false
+            }
+
+            if (loading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+                return@composable
+            }
+
+            val found = delivery
+            if (found == null) {
                 navController.popBackStack()
                 return@composable
             }
@@ -147,7 +169,7 @@ fun AppNavHost(
                 factory = object : androidx.lifecycle.ViewModelProvider.Factory {
                     @Suppress("UNCHECKED_CAST")
                     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                        return DeliveryDetailViewModel(delivery, deliveryRepository) as T
+                        return DeliveryDetailViewModel(found, deliveryRepository) as T
                     }
                 }
             )

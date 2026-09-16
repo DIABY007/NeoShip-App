@@ -35,8 +35,8 @@ class DeliveryListViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
-                // Chargement des courses — délai réseau réel (pas de delay artificiel)
-                val allDeliveries = deliveryRepository.getMockDeliveries()
+                val allDeliveries = deliveryRepository.getDeliveries()
+                    .getOrDefault(emptyList()) // Fallback mock si API down
                 val completedIds = completedStorage.getCompletedIds()
                 val filtered = allDeliveries.filter { it.id !in completedIds }
 
@@ -57,7 +57,8 @@ class DeliveryListViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isRefreshing = true, error = null)
             try {
-                val allDeliveries = deliveryRepository.getMockDeliveries()
+                val allDeliveries = deliveryRepository.getDeliveries()
+                    .getOrDefault(emptyList())
                 val completedIds = completedStorage.getCompletedIds()
                 val filtered = allDeliveries.filter { it.id !in completedIds }
 
@@ -86,6 +87,6 @@ class DeliveryListViewModel(
         authRepository.logout()
     }
 
-    /** ID du coursier extrait dynamiquement du token JWT */
-    fun getCourierId(): String = authRepository.getCourierId()
+    /** ID du coursier extrait depuis la réponse login */
+    fun getCourierId(): String = authRepository.getUserId() ?: "unknown"
 }

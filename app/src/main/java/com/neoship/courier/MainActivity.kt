@@ -8,13 +8,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
-import com.neoship.courier.data.repository.DeliveryRepository
 import com.neoship.courier.navigation.AppNavHost
 import com.neoship.courier.ui.theme.NeoShipTheme
 
 class MainActivity : ComponentActivity() {
-
-    private val deliveryRepository = DeliveryRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,13 +23,11 @@ class MainActivity : ComponentActivity() {
             NeoShipTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val navController = rememberNavController()
-                    val mockDeliveries = deliveryRepository.getMockDeliveries()
 
                     AppNavHost(
                         navController = navController,
                         tokenManager = app.tokenManager,
-                        completedDeliveriesStorage = app.completedDeliveriesStorage,
-                        deliveries = mockDeliveries
+                        completedDeliveriesStorage = app.completedDeliveriesStorage
                     )
                 }
             }

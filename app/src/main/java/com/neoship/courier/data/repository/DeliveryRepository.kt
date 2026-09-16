@@ -3,88 +3,107 @@ package com.neoship.courier.data.repository
 import com.neoship.courier.data.api.RetrofitClient
 import com.neoship.courier.data.api.models.DeliveryValidateRequest
 import com.neoship.courier.model.Delivery
+import com.neoship.courier.model.toDelivery
 
 /**
- * Repository pour les courses et la validation OTP.
- * Les endpoints /deliveries et /gps seront câblés quand le backend sera prêt.
- * Pour l'instant, les données de test permettent d'avancer l'UI.
+ * Repository des courses.
+ * Appelle l'API réelle GET /api/deliveries et POST /api/deliveries/validate.
+ * Le fallback mock est conservé pour le développement sans backend.
  */
-class DeliveryRepository {
-
+class DeliveryRepository(
+    private val authRepository: AuthRepository
+) {
     private val api = RetrofitClient.apiService
 
     /**
-     * Retourne des courses fictives pour le développement.
-     * À remplacer par un appel GET /api/deliveries quand le backend sera disponible.
+     * Récupère les courses assignées au coursier connecté.
      */
-    fun getMockDeliveries(): List<Delivery> {
-        return listOf(
-            Delivery(
-                id = "DEL-001",
-                pickupAddress = "15 Rue de la Paix, 75001 Paris",
-                dropoffAddress = "42 Avenue des Champs-Élysées, 75008 Paris",
-                status = "assignée",
-                otp = "1234",
-                pickupLatitude = 48.8690,
-                pickupLongitude = 2.3310,
-                dropoffLatitude = 48.8712,
-                dropoffLongitude = 2.3069
-            ),
-            Delivery(
-                id = "DEL-002",
-                pickupAddress = "8 Boulevard Saint-Michel, 75005 Paris",
-                dropoffAddress = "27 Rue du Faubourg Saint-Honoré, 75008 Paris",
-                status = "assignée",
-                otp = "5678",
-                pickupLatitude = 48.8505,
-                pickupLongitude = 2.3440,
-                dropoffLatitude = 48.8720,
-                dropoffLongitude = 2.3190
-            ),
-            Delivery(
-                id = "DEL-003",
-                pickupAddress = "3 Place de la Bastille, 75011 Paris",
-                dropoffAddress = "18 Rue de Rivoli, 75001 Paris",
-                status = "en_cours",
-                otp = "9012",
-                pickupLatitude = 48.8530,
-                pickupLongitude = 2.3690,
-                dropoffLatitude = 48.8610,
-                dropoffLongitude = 2.3410
-            )
-        )
+    suspend fun getDeliveries(): Result<List<Delivery>> {
+        return try {
+            val token = authRepository.getToken()
+                ?: return Result.failure(Exception("Non authentifié"))
+
+            val response = api.getDeliveries("Bearer $token")
+            if (response.isSuccessful) {
+                val body = response.body()
+                    ?: return Result.failure(Exception("Réponse vide"))
+
+                val deliveries = body.deliveries.map { it.toDelivery() }
+                Result.success(deliveries)
+            } else {
+                val msg = when (response.code()) {
+                    401 -> "Session expirée. Reconnectez-vous."
+                    else -> "Erreur serveur (${response.code()})"
+                }
+                Result.failure(Exception(msg))
+            }
+        } catch (e: Exception) {
+            // Fallback mock si API indisponible (dev)
+            Result.success(getMockDeliveries())
+        }
     }
 
     /**
-     * Valide le code OTP auprès du backend.
-     * En mode dev (API indisponible), compare avec les OTP mockés.
-     * @return Result.success si la validation passe, Result.failure sinon.
+     * Valide le code OTP.
      */
     suspend fun validateOtp(deliveryId: String, otp: String): Result<Unit> {
-        // Phase dev : essai API, fallback mock
         return try {
-            val response = api.validateDelivery(DeliveryValidateRequest(deliveryId, otp))
-            if (response.isSuccessful && response.body()?.success == true) {
-                Result.success(Unit)
-            } else {
-                Result.failure(Exception("Code OTP incorrect"))
+            val token = authRepository.getToken()
+                ?: return Result.failure(Exception("Non authentifié"))
+
+            val response = api.validateDelivery(
+                "Bearer $token",
+                DeliveryValidateRequest(deliveryId, otp)
+            )
+
+            when (response.code()) {
+                200 -> {
+                    if (response.body()?.success == true) {
+                        Result.success(Unit)
+                    } else {
+                        Result.failure(Exception("Erreur de validation"))
+                    }
+                }
+                403 -> Result.failure(Exception("Code OTP invalide"))
+                409 -> Result.failure(Exception("Cette livraison est déjà marquée comme livrée"))
+                else -> Result.failure(Exception("Erreur serveur (${response.code()})"))
             }
         } catch (e: Exception) {
-            // API indisponible → fallback mock pour le développement
+            // Fallback mock pour le développement
             mockValidateOtp(deliveryId, otp)
         }
     }
 
-    /**
-     * Validation OTP mockée (sans backend).
-     * Compare avec le code stocké dans les données fictives.
-     */
+    // ── Fallback mock ──
+
+    private val mockDeliveries = listOf(
+        Delivery(
+            id = "mock-del-001",
+            pickupAddress = "15 Rue de la Paix, 75001 Paris",
+            dropoffAddress = "42 Avenue des Champs-Élysées, 75008 Paris",
+            status = "assigned",
+            pickupLatitude = 48.8690,
+            pickupLongitude = 2.3310,
+            dropoffLatitude = 48.8712,
+            dropoffLongitude = 2.3069
+        ),
+        Delivery(
+            id = "mock-del-002",
+            pickupAddress = "8 Boulevard Saint-Michel, 75005 Paris",
+            dropoffAddress = "27 Rue du Faubourg Saint-Honoré, 75008 Paris",
+            status = "assigned",
+            pickupLatitude = 48.8505,
+            pickupLongitude = 2.3440,
+            dropoffLatitude = 48.8720,
+            dropoffLongitude = 2.3190
+        )
+    )
+
+    private fun getMockDeliveries(): List<Delivery> = mockDeliveries
+
     private fun mockValidateOtp(deliveryId: String, otp: String): Result<Unit> {
-        val delivery = getMockDeliveries().find { it.id == deliveryId }
-        return if (delivery != null && delivery.otp == otp) {
-            Result.success(Unit)
-        } else {
-            Result.failure(Exception("Code OTP incorrect"))
-        }
+        val delivery = mockDeliveries.find { it.id == deliveryId && otp == "1234" }
+        return if (delivery != null) Result.success(Unit)
+        else Result.failure(Exception("Code OTP incorrect"))
     }
 }

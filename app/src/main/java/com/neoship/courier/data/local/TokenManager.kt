@@ -6,8 +6,8 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
 /**
- * Gestion sécurisée du token JWT via EncryptedSharedPreferences.
- * Chiffrement AES-256 GCM + clé dérivée par Android Keystore.
+ * Gestion sécurisée du token JWT et des infos utilisateur.
+ * Token + user ID chiffrés via EncryptedSharedPreferences (AES-256 GCM).
  */
 class TokenManager(context: Context) {
 
@@ -27,12 +27,19 @@ class TokenManager(context: Context) {
         prefs.edit().putString(KEY_TOKEN, token).apply()
     }
 
-    fun getToken(): String? {
-        return prefs.getString(KEY_TOKEN, null)
+    fun getToken(): String? = prefs.getString(KEY_TOKEN, null)
+
+    fun saveUserId(id: String) {
+        prefs.edit().putString(KEY_USER_ID, id).apply()
     }
 
+    fun getUserId(): String? = prefs.getString(KEY_USER_ID, null)
+
     fun clearToken() {
-        prefs.edit().remove(KEY_TOKEN).apply()
+        prefs.edit()
+            .remove(KEY_TOKEN)
+            .remove(KEY_USER_ID)
+            .apply()
     }
 
     fun hasToken(): Boolean = getToken() != null
@@ -40,5 +47,6 @@ class TokenManager(context: Context) {
     companion object {
         private const val PREFS_NAME = "neoship_secure_prefs"
         private const val KEY_TOKEN = "jwt_token"
+        private const val KEY_USER_ID = "user_id"
     }
 }

@@ -94,6 +94,8 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    // Extension pour .await() sur les Tasks Google Play Services
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     // Debug tooling
     debugImplementation("androidx.compose.ui:ui-tooling")

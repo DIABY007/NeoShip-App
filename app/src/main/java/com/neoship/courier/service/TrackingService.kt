@@ -7,6 +7,7 @@ import com.neoship.courier.data.repository.GpsRepository
 import com.neoship.courier.gps.GpsTracker
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
 /**
@@ -63,26 +64,20 @@ class TrackingService : Service() {
         val notification = NotificationHelper.buildNotification(this)
         startForeground(NotificationHelper.NOTIFICATION_ID, notification)
 
-        // Lance la collecte des positions
-        serviceScope.launch {
-            gpsTracker.locationFlow(permissionGranted = true)
-                .onEach { location ->
-                    // Debug : log de la position
-                    android.util.Log.d(
-                        "TrackingService",
-                        "📍 Position: ${location.latitude},${location.longitude} " +
-                                "(±${location.accuracy}m)"
-                    )
-
-                    // Envoi au backend (silencieux en cas d'échec)
-                    gpsRepository.sendLocation(location, courierId)
-                }
-                .catch { e ->
-                    // Log l'erreur mais ne stoppe pas le service
-                    android.util.Log.e("TrackingService", "Erreur de tracking", e)
-                }
-                .collect()
-        }
+        // Lance la collecte des positions dans le scope du service
+        gpsTracker.locationFlow(permissionGranted = true)
+            .onEach { location ->
+                android.util.Log.d(
+                    "TrackingService",
+                    "📍 Position: ${location.latitude},${location.longitude} " +
+                            "(±${location.accuracy}m)"
+                )
+                gpsRepository.sendLocation(location, courierId)
+            }
+            .catch { e ->
+                android.util.Log.e("TrackingService", "Erreur de tracking", e)
+            }
+            .launchIn(serviceScope)
     }
 
     private fun stopTracking() {

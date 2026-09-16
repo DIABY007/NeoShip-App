@@ -163,6 +163,20 @@ fun DeliveryDetailScreen(
                 onValidate = viewModel::validateOtp
             )
 
+            // Bouton retour liste (après succès OTP)
+            if (state.validationResult is ValidationResult.Success) {
+                Button(
+                    onClick = { onBack() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                ) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Retour à la liste")
+                }
+            }
+
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -361,24 +375,7 @@ private fun OtpSection(
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(Modifier.height(4.dp))
-
-                // Bouton retour liste
-                Button(
-                    onClick = { onBack() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                ) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text("Retour à la liste")
                 }
-            }
 
             // Bouton de validation
             Button(

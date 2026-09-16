@@ -1,9 +1,10 @@
 package com.neoship.courier.gps
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
+import android.content.pm.PackageManager
 import android.location.Location
+import android.Manifest
 import com.google.android.gms.location.*
 import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.channels.awaitClose
@@ -89,16 +90,13 @@ class GpsTracker(private val context: Context) {
     }
 
     /**
-     * Vérifie si les permissions de localisation sont accordées au niveau Activity.
+     * Vérifie si les permissions de localisation sont accordées.
      */
     fun hasLocationPermissions(): Boolean {
-        val fine = android.Manifest.permission.ACCESS_FINE_LOCATION
-        val coarse = android.Manifest.permission.ACCESS_COARSE_LOCATION
-        return context.checkSelfPermission(fine) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        return context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
     }
 
     fun hasBackgroundLocationPermission(): Boolean {
-        return context.checkSelfPermission(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-                == android.content.pm.PackageManager.PERMISSION_GRANTED
+        return context.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED
     }
 }

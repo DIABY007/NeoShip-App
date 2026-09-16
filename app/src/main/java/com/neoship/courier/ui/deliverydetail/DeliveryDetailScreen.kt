@@ -96,22 +96,19 @@ fun DeliveryDetailScreen(
                     val lng = state.delivery.dropoffLongitude
 
                     if (lat != null && lng != null) {
-                        val gmmUri = Uri.parse("google.navigation:q=$lat,$lng&mode=d")
-                        val mapIntent = Intent(Intent.ACTION_VIEW, gmmUri).apply {
-                            setPackage("com.google.android.apps.maps")
-                        }
-
-                        if (mapIntent.resolveActivity(context.packageManager) != null) {
-                            context.startActivity(mapIntent)
-                        } else {
-                            // Fallback navigateur ou autre app Maps
-                            val webUri = Uri.parse(
-                                "https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving"
-                            )
-                            val webIntent = Intent(Intent.ACTION_VIEW, webUri)
-                            if (webIntent.resolveActivity(context.packageManager) != null) {
-                                context.startActivity(webIntent)
-                            } else {
+                        try {
+                            // 1. Essayer Google Maps par son URI scheme dédié
+                            val gmmUri = Uri.parse("google.navigation:q=$lat,$lng")
+                            val gmmIntent = Intent(Intent.ACTION_VIEW, gmmUri)
+                            context.startActivity(gmmIntent)
+                        } catch (e1: Exception) {
+                            try {
+                                // 2. Fallback : ouvrir dans Google Maps Web via navigateur
+                                val webUri = Uri.parse(
+                                    "https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving"
+                                )
+                                context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+                            } catch (e2: Exception) {
                                 scope.launch {
                                     snackbarHostState.showSnackbar(
                                         message = "Aucune app de navigation disponible",
@@ -123,7 +120,7 @@ fun DeliveryDetailScreen(
                     } else {
                         scope.launch {
                             snackbarHostState.showSnackbar(
-                                message = "Coordonnées de destination non disponibles",
+                                message = "Coordonnées indisponibles pour cette course",
                                 duration = SnackbarDuration.Short
                             )
                         }

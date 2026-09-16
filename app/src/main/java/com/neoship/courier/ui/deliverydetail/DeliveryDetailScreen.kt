@@ -101,58 +101,19 @@ fun DeliveryDetailScreen(
                 )
             }
 
-            // === 3. BOUTON NAVIGUER — ACTION PRINCIPALE ===
-            Button(
-                onClick = {
-                    val lat = state.delivery.dropoffLatitude
-                    val lng = state.delivery.dropoffLongitude
-
-                    if (lat != null && lng != null) {
-                        try {
-                            // 1. Essayer Google Maps par son URI scheme dédié
-                            val gmmUri = Uri.parse("google.navigation:q=$lat,$lng")
-                            val gmmIntent = Intent(Intent.ACTION_VIEW, gmmUri)
-                            context.startActivity(gmmIntent)
-                        } catch (e1: Exception) {
-                            try {
-                                // 2. Fallback : ouvrir dans Google Maps Web via navigateur
-                                val webUri = Uri.parse(
-                                    "https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving"
-                                )
-                                context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
-                            } catch (e2: Exception) {
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        message = "Aucune app de navigation disponible",
-                                        duration = SnackbarDuration.Short
-                                    )
-                                }
-                            }
-                        }
-                    } else {
-                        scope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = "Coordonnées indisponibles pour cette course",
-                                duration = SnackbarDuration.Short
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Icon(
-                    Icons.Default.Directions,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
+            // === 3. BOUTON D'ACTION SELON LE STATUT ===
+            when (state.delivery.status) {
+                "assigned" -> StartDeliveryButton(
+                    isStarting = state.isStarting,
+                    onStart = viewModel::startDelivery
                 )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    "Naviguer vers la destination",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                "in_progress" -> ActionButtonsInProgress(
+                    delivery = state.delivery,
+                    context = context,
+                    snackbarHostState = snackbarHostState,
+                    scope = scope,
+                    onFail = viewModel::failDelivery,
+                    isFailing = state.isFailing
                 )
             }
 
@@ -162,8 +123,9 @@ fun DeliveryDetailScreen(
                 color = MaterialTheme.colorScheme.outlineVariant
             )
 
-            // === 5. SECTION OTP ===
-            OtpSection(
+            // === 5. SECTION OTP (visible uniquement si en cours) ===
+            if (state.delivery.status == "in_progress" || state.delivery.status == "delivered") {
+                OtpSection(
                 otpInput = state.otpInput,
                 onOtpChanged = viewModel::onOtpChanged,
                 isValidating = state.isValidating,
@@ -185,6 +147,8 @@ fun DeliveryDetailScreen(
                     Text("Retour à la liste")
                 }
             }
+
+            } // fin if status in_progress/delivered
 
             Spacer(Modifier.height(24.dp))
         }
@@ -531,6 +495,110 @@ private fun ClientInfoCard(
                         Icon(Icons.Default.Forum, contentDescription = "WhatsApp", tint = MaterialTheme.colorScheme.tertiary)
                     }
                 }
+            }
+        }
+    }
+}
+
+// ────────────────────────────────────────────────────────────
+// BOUTON DÉMARRER LA COURSE (statut = assigned)
+// ────────────────────────────────────────────────────────────
+
+@Composable
+private fun StartDeliveryButton(
+    isStarting: Boolean,
+    onStart: () -> Unit
+) {
+    Button(
+        onClick = onStart,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        enabled = !isStarting,
+        shape = MaterialTheme.shapes.medium
+    ) {
+        if (isStarting) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(22.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
+                strokeWidth = 2.dp
+            )
+            Spacer(Modifier.width(10.dp))
+            Text("Démarrage…")
+        } else {
+            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(10.dp))
+            Text(
+                "Démarrer la course",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+// ────────────────────────────────────────────────────────────
+// BOUTONS NAVIGUER + SIGNALER PROBLÈME (statut = in_progress)
+// ────────────────────────────────────────────────────────────
+
+@Composable
+private fun ActionButtonsInProgress(
+    delivery: com.neoship.courier.model.Delivery,
+    context: android.content.Context,
+    snackbarHostState: SnackbarHostState,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onFail: () -> Unit,
+    isFailing: Boolean
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Naviguer vers la destination
+        Button(
+            onClick = {
+                val lat = delivery.dropoffLatitude
+                val lng = delivery.dropoffLongitude
+                if (lat != null && lng != null) {
+                    try {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=$lat,$lng")))
+                    } catch (_: Exception) {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving")))
+                        } catch (_: Exception) {
+                            scope.launch { snackbarHostState.showSnackbar("Aucune app de navigation", duration = SnackbarDuration.Short) }
+                        }
+                    }
+                } else {
+                    scope.launch { snackbarHostState.showSnackbar("Coordonnées indisponibles", duration = SnackbarDuration.Short) }
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Icon(Icons.Default.Directions, contentDescription = null, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(10.dp))
+            Text("Naviguer vers la destination", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        }
+
+        // Signaler un problème
+        OutlinedButton(
+            onClick = onFail,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            enabled = !isFailing,
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
+            )
+        ) {
+            if (isFailing) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+                Text("Signalement…")
+            } else {
+                Icon(Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Signaler un problème", fontWeight = FontWeight.Medium)
             }
         }
     }

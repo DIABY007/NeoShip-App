@@ -69,6 +69,38 @@ class DeliveryRepository(
         }
     }
 
+    /**
+     * Démarrer une course : assigned → in_progress.
+     */
+    suspend fun startDelivery(deliveryId: String): Result<Unit> {
+        return try {
+            val response = api.startDelivery(deliveryId)
+            if (response.isSuccessful && response.body()?.success == true) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Impossible de démarrer la course (${response.code()})"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Erreur réseau : ${e.localizedMessage}"))
+        }
+    }
+
+    /**
+     * Marquer une course comme échouée : in_progress → failed.
+     */
+    suspend fun failDelivery(deliveryId: String): Result<Unit> {
+        return try {
+            val response = api.failDelivery(deliveryId)
+            if (response.isSuccessful && response.body()?.success == true) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Impossible de signaler l'échec (${response.code()})"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Erreur réseau : ${e.localizedMessage}"))
+        }
+    }
+
     // ── Fallback mock ──
 
     private val mockDeliveries = listOf(

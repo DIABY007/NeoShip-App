@@ -9,11 +9,10 @@ import retrofit2.http.*
  *
  * Les headers `Authorization: Bearer <token>` sont injectés automatiquement
  * par l'interceptor de RetrofitClient.tokenProvider.
- * Les méthodes n'ont PAS de @Header("Authorization") pour éviter la duplication.
  */
 interface ApiService {
 
-    // ── Authentification (pas de token nécessaire) ──
+    // ── Authentification ──
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
@@ -22,26 +21,27 @@ interface ApiService {
     suspend fun getDeliveries(): Response<DeliveriesResponse>
 
     @GET("api/deliveries/{id}")
-    suspend fun getDeliveryDetail(
-        @Path("id") id: String
-    ): Response<DeliveryDetailResponse>
+    suspend fun getDeliveryDetail(@Path("id") id: String): Response<DeliveryDetailResponse>
+
+    // ── Actions Coursier ──
+    /** Démarrer une course : assigned → in_progress */
+    @PATCH("api/deliveries/{id}/start")
+    suspend fun startDelivery(@Path("id") id: String): Response<StatusUpdateResponse>
+
+    /** Marquer une course comme échouée : in_progress → failed */
+    @PATCH("api/deliveries/{id}/fail")
+    suspend fun failDelivery(@Path("id") id: String): Response<StatusUpdateResponse>
 
     // ── GPS ──
     @POST("api/gps/update")
-    suspend fun updateGps(
-        @Body request: GpsUpdateRequest
-    ): Response<GpsResponse>
+    suspend fun updateGps(@Body request: GpsUpdateRequest): Response<GpsResponse>
 
     // ── Validation OTP ──
     @POST("api/deliveries/validate")
-    suspend fun validateDelivery(
-        @Body request: DeliveryValidateRequest
-    ): Response<DeliveryValidateResponse>
+    suspend fun validateDelivery(@Body request: DeliveryValidateRequest): Response<DeliveryValidateResponse>
 }
 
-data class GpsResponse(
-    val success: Boolean
-)
+data class GpsResponse(val success: Boolean)
 
 data class DeliveryDetailResponse(
     val delivery: DeliveryDto,
@@ -52,4 +52,9 @@ data class GpsLogDto(
     val latitude: Double,
     val longitude: Double,
     val timestamp: String
+)
+
+data class StatusUpdateResponse(
+    val success: Boolean,
+    val delivery: DeliveryDto? = null
 )

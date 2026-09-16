@@ -7,7 +7,7 @@ import com.neoship.courier.data.api.models.GpsUpdateRequest
 /**
  * Repository d'envoi des positions GPS.
  * POST /api/gps/update avec les coordonnées.
- * Le token JWT est récupéré automatiquement via le tokenProvider de RetrofitClient.
+ * Le token Bearer est injecté automatiquement par l'interceptor RetrofitClient.
  */
 class GpsRepository {
     private val api = RetrofitClient.apiService
@@ -19,7 +19,7 @@ class GpsRepository {
                 longitude = location.longitude,
                 deliveryId = null
             )
-            val response = api.updateGps("Bearer ${RetrofitClient.tokenProvider?.invoke() ?: ""}", request)
+            val response = api.updateGps(request)
             response.isSuccessful
         } catch (e: Exception) {
             false

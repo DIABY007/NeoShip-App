@@ -17,13 +17,11 @@ class DeliveryRepository(
 
     /**
      * Récupère les courses assignées au coursier connecté.
+     * Le token Bearer est injecté automatiquement par l'interceptor RetrofitClient.
      */
     suspend fun getDeliveries(): Result<List<Delivery>> {
         return try {
-            val token = authRepository.getToken()
-                ?: return Result.failure(Exception("Non authentifié"))
-
-            val response = api.getDeliveries("Bearer $token")
+            val response = api.getDeliveries()
             if (response.isSuccessful) {
                 val body = response.body()
                     ?: return Result.failure(Exception("Réponse vide"))
@@ -31,28 +29,23 @@ class DeliveryRepository(
                 val deliveries = body.deliveries.map { it.toDelivery() }
                 Result.success(deliveries)
             } else {
-                val msg = when (response.code()) {
-                    401 -> "Session expirée. Reconnectez-vous."
-                    else -> "Erreur serveur (${response.code()})"
-                }
-                Result.failure(Exception(msg))
+                val errorBody = response.errorBody()?.string()
+                android.util.Log.w("DeliveryRepo", "API error ${response.code()}: $errorBody")
+                Result.failure(Exception("Erreur serveur (${response.code()})"))
             }
         } catch (e: Exception) {
-            // Fallback mock si API indisponible (dev)
+            android.util.Log.w("DeliveryRepo", "API call failed, mock fallback", e)
             Result.success(getMockDeliveries())
         }
     }
 
     /**
      * Valide le code OTP.
+     * Le token Bearer est injecté automatiquement par l'interceptor RetrofitClient.
      */
     suspend fun validateOtp(deliveryId: String, otp: String): Result<Unit> {
         return try {
-            val token = authRepository.getToken()
-                ?: return Result.failure(Exception("Non authentifié"))
-
             val response = api.validateDelivery(
-                "Bearer $token",
                 DeliveryValidateRequest(deliveryId, otp)
             )
 
@@ -64,12 +57,14 @@ class DeliveryRepository(
                         Result.failure(Exception("Erreur de validation"))
                     }
                 }
-                403 -> Result.failure(Exception("Code OTP invalide"))
-                409 -> Result.failure(Exception("Cette livraison est déjà marquée comme livrée"))
+                403 -> {
+                    val err = response.errorBody()?.string() ?: "Code OTP invalide"
+                    Result.failure(Exception(err))
+                }
+                409 -> Result.failure(Exception("Cette livraison est déjà livrée"))
                 else -> Result.failure(Exception("Erreur serveur (${response.code()})"))
             }
         } catch (e: Exception) {
-            // Fallback mock pour le développement
             mockValidateOtp(deliveryId, otp)
         }
     }

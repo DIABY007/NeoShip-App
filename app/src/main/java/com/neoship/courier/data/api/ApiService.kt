@@ -4,35 +4,37 @@ import com.neoship.courier.data.api.models.*
 import retrofit2.Response
 import retrofit2.http.*
 
+/**
+ * Interface API NeoShip — contrat V1.0.
+ *
+ * Les headers `Authorization: Bearer <token>` sont injectés automatiquement
+ * par l'interceptor de RetrofitClient.tokenProvider.
+ * Les méthodes n'ont PAS de @Header("Authorization") pour éviter la duplication.
+ */
 interface ApiService {
 
-    // ── Authentification ──
+    // ── Authentification (pas de token nécessaire) ──
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
     // ── Courses ──
     @GET("api/deliveries")
-    suspend fun getDeliveries(
-        @Header("Authorization") token: String
-    ): Response<DeliveriesResponse>
+    suspend fun getDeliveries(): Response<DeliveriesResponse>
 
     @GET("api/deliveries/{id}")
     suspend fun getDeliveryDetail(
-        @Header("Authorization") token: String,
         @Path("id") id: String
     ): Response<DeliveryDetailResponse>
 
     // ── GPS ──
     @POST("api/gps/update")
     suspend fun updateGps(
-        @Header("Authorization") token: String,
         @Body request: GpsUpdateRequest
     ): Response<GpsResponse>
 
     // ── Validation OTP ──
     @POST("api/deliveries/validate")
     suspend fun validateDelivery(
-        @Header("Authorization") token: String,
         @Body request: DeliveryValidateRequest
     ): Response<DeliveryValidateResponse>
 }

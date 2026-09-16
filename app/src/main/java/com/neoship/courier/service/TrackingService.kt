@@ -28,7 +28,6 @@ class TrackingService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var gpsTracker: GpsTracker
     private val gpsRepository = GpsRepository()
-    private var courierId: String = "unknown"
 
     override fun onCreate() {
         super.onCreate()
@@ -37,15 +36,9 @@ class TrackingService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> {
-                courierId = intent.getStringExtra(EXTRA_COURIER_ID) ?: "unknown"
-                startTracking()
-            }
-            ACTION_STOP -> {
-                stopTracking()
-            }
+            ACTION_START -> startTracking()
+            ACTION_STOP -> stopTracking()
         }
-        // START_STICKY : redémarre le service si tué par le système
         return START_STICKY
     }
 
@@ -72,7 +65,7 @@ class TrackingService : Service() {
                     "📍 Position: ${location.latitude},${location.longitude} " +
                             "(±${location.accuracy}m)"
                 )
-                gpsRepository.sendLocation(location, courierId)
+                gpsRepository.sendLocation(location)
             }
             .catch { e ->
                 android.util.Log.e("TrackingService", "Erreur de tracking", e)

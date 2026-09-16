@@ -7,24 +7,19 @@ import com.neoship.courier.data.api.models.GpsUpdateRequest
 /**
  * Repository d'envoi des positions GPS.
  * POST /api/gps/update avec les coordonnées.
- * Rate limit : 30 req/min côté serveur — notre intervalle de 10s (6 req/min) est sûr.
+ * Le token JWT est récupéré automatiquement via le tokenProvider de RetrofitClient.
  */
-class GpsRepository(
-    private val authRepository: AuthRepository
-) {
+class GpsRepository {
     private val api = RetrofitClient.apiService
 
     suspend fun sendLocation(location: Location): Boolean {
         return try {
-            val token = authRepository.getToken()
-                ?: return false
-
             val request = GpsUpdateRequest(
                 latitude = location.latitude,
                 longitude = location.longitude,
-                deliveryId = null // Optionnel — associé à une course plus tard
+                deliveryId = null
             )
-            val response = api.updateGps("Bearer $token", request)
+            val response = api.updateGps("Bearer ${RetrofitClient.tokenProvider?.invoke() ?: ""}", request)
             response.isSuccessful
         } catch (e: Exception) {
             false

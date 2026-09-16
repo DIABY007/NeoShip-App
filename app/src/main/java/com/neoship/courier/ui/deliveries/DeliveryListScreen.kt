@@ -33,12 +33,9 @@ fun DeliveryListScreen(
     val context = LocalContext.current
 
     // Démarre le tracking GPS dès que le coursier arrive sur la liste
-    // L'ID du coursier est extrait dynamiquement du token JWT stocké
     LaunchedEffect(Unit) {
-        val courierId = viewModel.getCourierId()
         val intent = Intent(context, TrackingService::class.java).apply {
             action = TrackingService.ACTION_START
-            putExtra(TrackingService.EXTRA_COURIER_ID, courierId)
         }
         context.startForegroundService(intent)
     }

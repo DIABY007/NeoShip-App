@@ -26,6 +26,8 @@ data class DeliveryDto(
     val price: Double?,
     val distance: Double?,
     val courierId: String?,
+    val clientName: String?,
+    val clientPhone: String?,
     val createdAt: String,
     val updatedAt: String
 )

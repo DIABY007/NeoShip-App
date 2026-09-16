@@ -1,6 +1,7 @@
 package com.neoship.courier.model
 
 import com.neoship.courier.data.api.models.DeliveryDto
+import java.util.Locale
 
 /**
  * Modèle métier d'une course / livraison.
@@ -17,7 +18,9 @@ data class Delivery(
     val dropoffLongitude: Double? = null,
     val price: Double? = null,
     val distance: Double? = null,
-    val courierId: String? = null
+    val courierId: String? = null,
+    val clientName: String? = null,
+    val clientPhone: String? = null
 ) {
     val isCompleted: Boolean get() = status == "delivered"
 
@@ -29,6 +32,12 @@ data class Delivery(
         "failed" -> "Échouée"
         else -> status
     }
+
+    /** ID court : 6 premiers caractères de l'UUID, en majuscules */
+    val shortId: String get() = "#${id.take(6).uppercase(Locale.ROOT)}"
+
+    /** Vrai si le client a au moins un nom */
+    val hasClientInfo: Boolean get() = !clientName.isNullOrBlank()
 }
 
 /** Convertit un DTO API en modèle métier */
@@ -44,6 +53,8 @@ fun DeliveryDto.toDelivery(): Delivery {
         dropoffLongitude = dropoffLng,
         price = price,
         distance = distance,
-        courierId = courierId
+        courierId = courierId,
+        clientName = clientName,
+        clientPhone = clientPhone
     )
 }

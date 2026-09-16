@@ -2,6 +2,7 @@ package com.neoship.courier.ui.deliverydetail
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -55,7 +56,7 @@ fun DeliveryDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        state.delivery.id,
+                        state.delivery.shortId,
                         fontWeight = FontWeight.SemiBold
                     )
                 },
@@ -89,7 +90,18 @@ fun DeliveryDetailScreen(
                 dropoffAddress = state.delivery.dropoffAddress
             )
 
-            // === 2. BOUTON NAVIGUER — ACTION PRINCIPALE ===
+            // === 2. CLIENT (si disponible) ===
+            if (state.delivery.hasClientInfo) {
+                ClientInfoCard(
+                    clientName = state.delivery.clientName.orEmpty(),
+                    clientPhone = state.delivery.clientPhone,
+                    context = context,
+                    snackbarHostState = snackbarHostState,
+                    scope = scope
+                )
+            }
+
+            // === 3. BOUTON NAVIGUER — ACTION PRINCIPALE ===
             Button(
                 onClick = {
                     val lat = state.delivery.dropoffLatitude
@@ -144,13 +156,13 @@ fun DeliveryDetailScreen(
                 )
             }
 
-            // === 3. LIGNE DE SÉPARATION VISUELLE ===
+            // === 4. LIGNE DE SÉPARATION VISUELLE ===
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = 4.dp),
                 color = MaterialTheme.colorScheme.outlineVariant
             )
 
-            // === 4. SECTION OTP ===
+            // === 5. SECTION OTP ===
             OtpSection(
                 otpInput = state.otpInput,
                 onOtpChanged = viewModel::onOtpChanged,
@@ -403,6 +415,121 @@ private fun OtpSection(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text("Valider la livraison")
+                }
+            }
+        }
+    }
+}
+
+// ────────────────────────────────────────────────────────────
+// CLIENT INFO
+// ────────────────────────────────────────────────────────────
+
+@Composable
+private fun ClientInfoCard(
+    clientName: String,
+    clientPhone: String?,
+    context: android.content.Context,
+    snackbarHostState: SnackbarHostState,
+    scope: kotlinx.coroutines.CoroutineScope
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    "Client",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            // Nom
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.Badge,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    clientName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            // Téléphone + actions
+            if (!clientPhone.isNullOrBlank()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Phone,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        clientPhone,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    // Appel
+                    IconButton(
+                        onClick = {
+                            try {
+                                context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$clientPhone")))
+                            } catch (_: Exception) {
+                                scope.launch { snackbarHostState.showSnackbar("Impossible d'ouvrir le téléphone", duration = SnackbarDuration.Short) }
+                            }
+                        },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(Icons.Default.PhoneInTalk, contentDescription = "Appeler", tint = MaterialTheme.colorScheme.primary)
+                    }
+                    // WhatsApp
+                    IconButton(
+                        onClick = {
+                            try {
+                                val msg = "Bonjour%20${clientName.take(20).replace(" ", "%20")}%2C%20je%20suis%20votre%20coursier%20NeoShip"
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$clientPhone?text=$msg")))
+                            } catch (_: Exception) {
+                                scope.launch { snackbarHostState.showSnackbar("WhatsApp non disponible", duration = SnackbarDuration.Short) }
+                            }
+                        },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(Icons.Default.Forum, contentDescription = "WhatsApp", tint = MaterialTheme.colorScheme.tertiary)
+                    }
                 }
             }
         }

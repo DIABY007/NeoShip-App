@@ -1,10 +1,12 @@
 package com.neoship.courier.ui.deliveries
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neoship.courier.data.local.CompletedDeliveriesStorage
 import com.neoship.courier.data.repository.AuthRepository
 import com.neoship.courier.data.repository.DeliveryRepository
+import com.neoship.courier.data.repository.UpdateManager
 import com.neoship.courier.model.Delivery
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +17,12 @@ data class DeliveryListUiState(
     val deliveries: List<Delivery> = emptyList(),
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    // Mise à jour
+    val updateAvailable: Boolean = false,
+    val isDownloading: Boolean = false,
+    val downloadProgress: String = "",
+    val apkUrl: String = ""
 )
 
 class DeliveryListViewModel(
@@ -27,8 +34,36 @@ class DeliveryListViewModel(
     private val _uiState = MutableStateFlow(DeliveryListUiState())
     val uiState: StateFlow<DeliveryListUiState> = _uiState.asStateFlow()
 
+    private val updateManager = UpdateManager()
+
     init {
         loadDeliveries()
+    }
+
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            updateManager.checkForUpdate().fold(
+                onSuccess = { (available, url) ->
+                    if (available) _uiState.value = _uiState.value.copy(updateAvailable = true, apkUrl = url)
+                },
+                onFailure = { /* silence */ }
+            )
+        }
+    }
+
+    fun startUpdate(context: Context) {
+        val url = _uiState.value.apkUrl
+        if (url.isBlank()) return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isDownloading = true, downloadProgress = "Téléchargement…")
+            updateManager.downloadApk(context, url).fold(
+                onSuccess = { file ->
+                    _uiState.value = _uiState.value.copy(isDownloading = false)
+                    updateManager.installApk(context, file)
+                },
+                onFailure = { error -> _uiState.value = _uiState.value.copy(isDownloading = false, error = error.message) }
+            )
+        }
     }
 
     fun loadDeliveries() {

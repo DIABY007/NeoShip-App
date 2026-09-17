@@ -51,7 +51,10 @@ class LoginViewModel(
                         )
                     }
                 },
-                onFailure = { /* Serveur indispo, on ignore silencieusement */ }
+                onFailure = { error ->
+                    android.util.Log.w("UpdateVM", "Échec vérification mise à jour", error)
+                    // Laisse updateAvailable = false, pas d'erreur bloquante
+                }
             )
         }
     }

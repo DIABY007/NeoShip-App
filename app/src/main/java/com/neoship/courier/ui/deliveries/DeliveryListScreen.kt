@@ -32,12 +32,13 @@ fun DeliveryListScreen(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    // Démarre le tracking GPS dès que le coursier arrive sur la liste
+    // Démarre le tracking + vérifie mise à jour
     LaunchedEffect(Unit) {
         val intent = Intent(context, TrackingService::class.java).apply {
             action = TrackingService.ACTION_START
         }
         context.startForegroundService(intent)
+        viewModel.checkForUpdates()
     }
 
     Scaffold(
@@ -82,134 +83,129 @@ fun DeliveryListScreen(
             )
         }
     ) { padding ->
-
-        when {
-            // === CHARGEMENT INITIAL ===
-            state.isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // Contenu principal
+            when {
+                state.isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
-                        Text(
-                            "Chargement des courses…",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            // === ERREUR RÉSEAU ===
-            state.error != null -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.CloudOff,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-                        )
-                        Text(
-                            text = state.error ?: "Erreur inconnue",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(horizontal = 32.dp)
-                        )
-                        OutlinedButton(
-                            onClick = viewModel::loadDeliveries
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Icon(
-                                Icons.Default.Refresh,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text("Réessayer")
+                            CircularProgressIndicator()
+                            Text("Chargement des courses…",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
-            }
 
-            // === LISTE VIDE ===
-            state.deliveries.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                state.error != null -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Default.Inbox,
-                            contentDescription = null,
-                            modifier = Modifier.size(72.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                        )
-                        Text(
-                            "Aucune course assignée",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            "Les nouvelles courses apparaîtront ici",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
-                        OutlinedButton(
-                            onClick = viewModel::refresh
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Icon(
-                                Icons.Default.Refresh,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text("Actualiser")
+                            Icon(Icons.Default.CloudOff, contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f))
+                            Text(text = state.error ?: "Erreur inconnue",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(horizontal = 32.dp))
+                            OutlinedButton(onClick = viewModel::loadDeliveries) {
+                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Réessayer")
+                            }
+                        }
+                    }
+                }
+
+                state.deliveries.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(Icons.Default.Inbox, contentDescription = null,
+                                modifier = Modifier.size(72.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                            Text("Aucune course assignée",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Les nouvelles courses apparaîtront ici",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                            OutlinedButton(onClick = viewModel::refresh) {
+                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Actualiser")
+                            }
+                        }
+                    }
+                }
+
+                else -> {
+                    PullToRefreshBox(
+                        isRefreshing = state.isRefreshing,
+                        onRefresh = viewModel::refresh,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        LazyColumn(
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(state.deliveries, key = { it.id }) { delivery ->
+                                DeliveryCard(delivery = delivery, onClick = { onDeliveryClick(delivery) })
+                            }
+                            item { Spacer(Modifier.height(8.dp)) }
                         }
                     }
                 }
             }
 
-            // === LISTE DES COURSES ===
-            else -> {
-                PullToRefreshBox(
-                    isRefreshing = state.isRefreshing,
-                    onRefresh = viewModel::refresh,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
+            // Bannière mise à jour (superposée en haut)
+            if (state.updateAvailable && !state.isDownloading) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+                    color = MaterialTheme.colorScheme.primaryContainer
                 ) {
-                    LazyColumn(
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        items(state.deliveries, key = { it.id }) { delivery ->
-                            DeliveryCard(
-                                delivery = delivery,
-                                onClick = { onDeliveryClick(delivery) }
-                            )
+                        Text("Mise à jour disponible",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        TextButton(onClick = { viewModel.startUpdate(context) }) {
+                            Text("Mettre à jour", fontWeight = FontWeight.Bold)
                         }
-
-                        // Espace en bas pour éviter que la dernière carte touche le bord
-                        item { Spacer(Modifier.height(8.dp)) }
+                    }
+                }
+            }
+            if (state.isDownloading) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+                    color = MaterialTheme.colorScheme.tertiaryContainer
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Text(state.downloadProgress, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }

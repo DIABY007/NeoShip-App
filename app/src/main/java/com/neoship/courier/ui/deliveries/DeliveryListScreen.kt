@@ -83,46 +83,9 @@ fun DeliveryListScreen(
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // === BANNIÈRE MISE À JOUR (pousse le contenu vers le bas) ===
-            if (state.updateAvailable && !state.isDownloading) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Mise à jour disponible",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer)
-                        TextButton(onClick = { viewModel.startUpdate(context) }) {
-                            Text("Mettre à jour", fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-            if (state.isDownloading) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.tertiaryContainer
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                        Text(state.downloadProgress, style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            }
-
-            // Contenu principal (prend le reste de l'espace)
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                when {
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // Contenu principal (toujours en fond)
+            when {
                 state.isLoading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -198,8 +161,9 @@ fun DeliveryListScreen(
                         onRefresh = viewModel::refresh,
                         modifier = Modifier.fillMaxSize()
                     ) {
+                        val listTopPad = if (state.updateAvailable) 72.dp else 16.dp
                         LazyColumn(
-                            contentPadding = PaddingValues(16.dp),
+                            contentPadding = PaddingValues(top = listTopPad, bottom = 16.dp, start = 16.dp, end = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(state.deliveries, key = { it.id }) { delivery ->
@@ -209,12 +173,45 @@ fun DeliveryListScreen(
                         }
                     }
                 }
-            } // fin when
-            } // fin Box(weight)
+            }
 
-        // Fin de la colonne
-        }
-    }
+            // === BANNIÈRE MISE À JOUR (superposée en haut) ===
+            if (state.updateAvailable && !state.isDownloading) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Mise à jour disponible",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        TextButton(onClick = { viewModel.startUpdate(context) }) {
+                            Text("Mettre à jour", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+            if (state.isDownloading) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+                    color = MaterialTheme.colorScheme.tertiaryContainer
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Text(state.downloadProgress, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        } // fin Box
+    } // fin Scaffold
 }
 
 @Composable

@@ -42,7 +42,7 @@ object NotificationHelper {
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle(context.getString(R.string.tracking_notification_title))
             .setContentText(context.getString(R.string.tracking_notification_body))
-            .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+            .setSmallIcon(R.drawable.ic_notification)
             .setOngoing(true)  // Non balayable
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()

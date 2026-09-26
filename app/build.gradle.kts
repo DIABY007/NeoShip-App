@@ -13,7 +13,7 @@ android {
         applicationId = "com.neoship.courier"
         minSdk = 26
         targetSdk = 34
-        versionCode = 6
+        versionCode = 7
         versionName = "1.0.0"
 
         // API base URL — overridden via local.properties or defaults to emulator localhost

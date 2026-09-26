@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neoship.courier.data.api.RetrofitClient
+import com.neoship.courier.data.api.models.AppVersionResponse
 import com.neoship.courier.data.repository.DeliveryRepository
 import com.neoship.courier.model.Delivery
 import com.neoship.courier.util.QrCodeGenerator
@@ -47,7 +48,7 @@ class DeliveryDetailViewModel(
     private fun loadBeneficiary() {
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.apiService.getSettings()
+                val response = RetrofitClient.apiService.getAppVersion()
                 if (response.isSuccessful) {
                     val number = response.body()?.beneficiaryNumber
                     if (!number.isNullOrBlank()) {

@@ -6,5 +6,6 @@ package com.neoship.courier.data.api.models
 data class AppVersionResponse(
     val latestVersion: Int,
     val apkUrl: String,
+    val beneficiaryNumber: String? = null,
     val forceUpdate: Boolean = false
 )

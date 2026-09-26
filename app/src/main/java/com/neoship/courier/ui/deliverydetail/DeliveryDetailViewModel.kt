@@ -1,9 +1,12 @@
 package com.neoship.courier.ui.deliverydetail
 
+import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.neoship.courier.data.api.RetrofitClient
 import com.neoship.courier.data.repository.DeliveryRepository
 import com.neoship.courier.model.Delivery
+import com.neoship.courier.util.QrCodeGenerator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +20,11 @@ data class DeliveryDetailUiState(
     val isFailing: Boolean = false,
     val validationResult: ValidationResult? = null,
     val hasError: Boolean = false,
-    val shouldNavigateBack: Boolean = false
+    val shouldNavigateBack: Boolean = false,
+    // Mobile Money QR
+    val qrCodeBitmap: Bitmap? = null,
+    val qrUssdCode: String = "",
+    val beneficiaryNumber: String? = null
 )
 
 sealed class ValidationResult {
@@ -32,6 +39,31 @@ class DeliveryDetailViewModel(
 
     private val _uiState = MutableStateFlow(DeliveryDetailUiState(delivery = delivery))
     val uiState: StateFlow<DeliveryDetailUiState> = _uiState.asStateFlow()
+
+    init {
+        loadBeneficiary()
+    }
+
+    private fun loadBeneficiary() {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.apiService.getSettings()
+                if (response.isSuccessful) {
+                    val number = response.body()?.beneficiaryNumber
+                    if (!number.isNullOrBlank()) {
+                        val price = (delivery.price?.toInt() ?: 0).coerceAtLeast(100)
+                        val ussd = QrCodeGenerator.buildUssdUri(number, price)
+                        val bitmap = QrCodeGenerator.generate(ussd, 512)
+                        _uiState.value = _uiState.value.copy(
+                            beneficiaryNumber = number,
+                            qrUssdCode = ussd,
+                            qrCodeBitmap = bitmap
+                        )
+                    }
+                }
+            } catch (_: Exception) { }
+        }
+    }
 
     // ── OTP ──
 
@@ -71,9 +103,7 @@ class DeliveryDetailViewModel(
                 onFailure = { error ->
                     _uiState.value = _uiState.value.copy(
                         isValidating = false,
-                        validationResult = ValidationResult.Failure(
-                            error.message ?: "Code OTP incorrect"
-                        ),
+                        validationResult = ValidationResult.Failure(error.message ?: "Code OTP incorrect"),
                         hasError = true
                     )
                 }
@@ -89,19 +119,13 @@ class DeliveryDetailViewModel(
             val result = deliveryRepository.startDelivery(delivery.id)
             result.fold(
                 onSuccess = {
-                    // Mise à jour locale du statut
                     val updated = _uiState.value.delivery.copy(status = "in_progress")
-                    _uiState.value = _uiState.value.copy(
-                        delivery = updated,
-                        isStarting = false
-                    )
+                    _uiState.value = _uiState.value.copy(delivery = updated, isStarting = false)
                 },
                 onFailure = { error ->
                     _uiState.value = _uiState.value.copy(
                         isStarting = false,
-                        validationResult = ValidationResult.Failure(
-                            error.message ?: "Impossible de démarrer"
-                        ),
+                        validationResult = ValidationResult.Failure(error.message ?: "Impossible de démarrer"),
                         hasError = true
                     )
                 }
@@ -118,17 +142,12 @@ class DeliveryDetailViewModel(
             result.fold(
                 onSuccess = {
                     val updated = _uiState.value.delivery.copy(status = "failed")
-                    _uiState.value = _uiState.value.copy(
-                        delivery = updated,
-                        isFailing = false
-                    )
+                    _uiState.value = _uiState.value.copy(delivery = updated, isFailing = false)
                 },
                 onFailure = { error ->
                     _uiState.value = _uiState.value.copy(
                         isFailing = false,
-                        validationResult = ValidationResult.Failure(
-                            error.message ?: "Impossible de signaler l'échec"
-                        ),
+                        validationResult = ValidationResult.Failure(error.message ?: "Impossible de signaler l'échec"),
                         hasError = true
                     )
                 }

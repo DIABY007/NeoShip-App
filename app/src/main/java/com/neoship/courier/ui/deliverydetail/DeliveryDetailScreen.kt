@@ -1,10 +1,12 @@
 package com.neoship.courier.ui.deliverydetail
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -13,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
@@ -131,7 +134,9 @@ fun DeliveryDetailScreen(
                 isValidating = state.isValidating,
                 hasError = state.hasError,
                 validationResult = state.validationResult,
-                onValidate = viewModel::validateOtp
+                onValidate = viewModel::validateOtp,
+                qrCodeBitmap = state.qrCodeBitmap,
+                ussdCode = state.qrUssdCode
             )
 
             // Bouton retour liste (après succès OTP)
@@ -258,7 +263,9 @@ private fun OtpSection(
     isValidating: Boolean,
     hasError: Boolean,
     validationResult: ValidationResult?,
-    onValidate: () -> Unit
+    onValidate: () -> Unit,
+    qrCodeBitmap: Bitmap? = null,
+    ussdCode: String = ""
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -274,6 +281,41 @@ private fun OtpSection(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // QR Code Mobile Money
+            if (qrCodeBitmap != null) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        "Paiement Mobile Money",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(2.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Image(
+                            bitmap = qrCodeBitmap.asImageBitmap(),
+                            contentDescription = "QR Code paiement",
+                            modifier = Modifier.size(220.dp).padding(12.dp)
+                        )
+                    }
+
+                    Text(
+                        "Scannez ce code pour payer",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                }
+            }
+
             Text(
                 "Validation de la livraison",
                 style = MaterialTheme.typography.titleMedium,

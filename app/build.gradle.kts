@@ -92,6 +92,9 @@ dependencies {
     // Google Play Services — Localisation GPS
     implementation("com.google.android.gms:play-services-location:21.1.0")
 
+    // ZXing — génération de QR Code (Mobile Money)
+    implementation("com.google.zxing:core:3.5.3")
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     // Extension pour .await() sur les Tasks Google Play Services

@@ -36,6 +36,10 @@ interface ApiService {
     @PATCH("api/deliveries/{id}/fail")
     suspend fun failDelivery(@Path("id") id: String): Response<StatusUpdateResponse>
 
+    // ── Settings ──
+    @GET("api/settings")
+    suspend fun getSettings(): Response<AppSettingsResponse>
+
     // ── GPS ──
     @POST("api/gps/update")
     suspend fun updateGps(@Body request: GpsUpdateRequest): Response<GpsResponse>

@@ -1,6 +1,8 @@
 package com.neoship.courier.ui.login
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import com.neoship.courier.R
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -16,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -65,6 +68,13 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Logo
+                    Image(
+                        painter = painterResource(id = R.mipmap.ic_launcher),
+                        contentDescription = "NeoShip",
+                        modifier = Modifier.size(80.dp)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
                     // Titre
                     Text(
                         text = "NeoShip",

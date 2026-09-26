@@ -1,8 +1,10 @@
 package com.neoship.courier.ui.deliveries
 
 import android.content.Intent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import com.neoship.courier.R
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -15,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,6 +52,11 @@ fun DeliveryListScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        Image(
+                            painter = painterResource(id = R.mipmap.ic_launcher),
+                            contentDescription = "NeoShip",
+                            modifier = Modifier.size(28.dp)
+                        )
                         Text("Mes courses")
                         // Indicateur visuel de tracking actif
                         Box(

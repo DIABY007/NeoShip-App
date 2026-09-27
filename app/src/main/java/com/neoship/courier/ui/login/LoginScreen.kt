@@ -71,13 +71,13 @@ fun LoginScreen(
                     // Logo
                     Image(
                         painter = painterResource(id = R.drawable.neoship_logo),
-                        contentDescription = "NeoShip",
+                        contentDescription = "Licopress",
                         modifier = Modifier.size(80.dp)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     // Titre
                     Text(
-                        text = "NeoShip",
+                        text = "Licopress",
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.primary
                     )

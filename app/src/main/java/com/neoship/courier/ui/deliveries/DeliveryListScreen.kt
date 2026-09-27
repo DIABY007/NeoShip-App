@@ -53,7 +53,7 @@ fun DeliveryListScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Image(
-                            painter = painterResource(id = R.mipmap.ic_launcher),
+                            painter = painterResource(id = R.drawable.neoship_logo),
                             contentDescription = "NeoShip",
                             modifier = Modifier.size(28.dp)
                         )

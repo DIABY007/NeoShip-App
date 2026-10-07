@@ -43,10 +43,10 @@ class DeliveryRepository(
      * Valide le code OTP.
      * Le token Bearer est injecté automatiquement par l'interceptor RetrofitClient.
      */
-    suspend fun validateOtp(deliveryId: String, otp: String): Result<Unit> {
+    suspend fun validateOtp(deliveryId: String, otp: String, recipientName: String? = null): Result<Unit> {
         return try {
             val response = api.validateDelivery(
-                DeliveryValidateRequest(deliveryId, otp)
+                DeliveryValidateRequest(deliveryId, otp, recipientName)
             )
 
             when (response.code()) {

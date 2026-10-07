@@ -133,6 +133,8 @@ fun DeliveryDetailScreen(
                 OtpSection(
                 otpInput = state.otpInput,
                 onOtpChanged = viewModel::onOtpChanged,
+                otpRecipientName = state.otpRecipientName,
+                onRecipientNameChanged = viewModel::onRecipientNameChanged,
                 isValidating = state.isValidating,
                 hasError = state.hasError,
                 validationResult = state.validationResult,
@@ -262,6 +264,8 @@ private fun AddressTimelineCard(
 private fun OtpSection(
     otpInput: String,
     onOtpChanged: (String) -> Unit,
+    otpRecipientName: String,
+    onRecipientNameChanged: (String) -> Unit,
     isValidating: Boolean,
     hasError: Boolean,
     validationResult: ValidationResult?,
@@ -329,6 +333,22 @@ private fun OtpSection(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
+            )
+
+            // Nom du destinataire (preuve de livraison)
+            OutlinedTextField(
+                value = otpRecipientName,
+                onValueChange = onRecipientNameChanged,
+                label = { Text("Nom du destinataire") },
+                placeholder = { Text("Ex: Moussa Ouédraogo") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isValidating && validationResult !is ValidationResult.Success,
+                supportingText = { Text("La personne qui a reçu le colis") }
             )
 
             // Champ OTP

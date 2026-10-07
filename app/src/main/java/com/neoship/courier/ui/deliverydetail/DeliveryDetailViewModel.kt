@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 data class DeliveryDetailUiState(
     val delivery: Delivery,
     val otpInput: String = "",
+    val otpRecipientName: String = "",
     val isValidating: Boolean = false,
     val isStarting: Boolean = false,
     val isFailing: Boolean = false,
@@ -94,6 +95,10 @@ class DeliveryDetailViewModel(
 
     // ── OTP ──
 
+    fun onRecipientNameChanged(name: String) {
+        _uiState.value = _uiState.value.copy(otpRecipientName = name)
+    }
+
     fun onOtpChanged(otp: String) {
         if (otp.length <= 4 && otp.all { it.isDigit() }) {
             _uiState.value = _uiState.value.copy(
@@ -118,7 +123,8 @@ class DeliveryDetailViewModel(
         }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isValidating = true)
-            val result = deliveryRepository.validateOtp(delivery.id, state.otpInput)
+            val recipientName = state.otpRecipientName.ifBlank { null }
+            val result = deliveryRepository.validateOtp(delivery.id, state.otpInput, recipientName)
             result.fold(
                 onSuccess = {
                     _uiState.value = _uiState.value.copy(

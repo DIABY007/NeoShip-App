@@ -34,7 +34,7 @@ interface ApiService {
 
     /** Marquer une course comme échouée : in_progress → failed */
     @PATCH("api/deliveries/{id}/fail")
-    suspend fun failDelivery(@Path("id") id: String): Response<StatusUpdateResponse>
+    suspend fun failDelivery(@Path("id") id: String, @Body reason: Map<String, String>): Response<StatusUpdateResponse>
 
     // ── Settings ──
     @GET("api/settings")

@@ -22,6 +22,11 @@ data class DeliveryDetailUiState(
     val validationResult: ValidationResult? = null,
     val hasError: Boolean = false,
     val shouldNavigateBack: Boolean = false,
+    // Failure reason modal
+    val showFailureDialog: Boolean = false,
+    val selectedFailureReason: String = "",
+    val isSubmittingFailure: Boolean = false,
+    val failureError: String? = null,
     // Mobile Money QR
     val qrCodeBitmap: Bitmap? = null,
     val qrUssdCode: String = "",
@@ -32,6 +37,27 @@ sealed class ValidationResult {
     data object Success : ValidationResult()
     data class Failure(val message: String) : ValidationResult()
 }
+
+/**
+ * Motifs d'échec disponibles pour "Signaler un problème".
+ */
+val FAILURE_REASONS = listOf(
+    "destinataire_absent",
+    "destinataire_injoignable",
+    "mauvaise_adresse",
+    "colis_endommage",
+    "refus_colis",
+    "erreur_livraison"
+)
+
+val FAILURE_REASONS_LABEL: Map<String, String> = mapOf(
+    "destinataire_absent" to "Destinataire absent",
+    "destinataire_injoignable" to "Destinataire injoignable",
+    "mauvaise_adresse" to "Mauvaise adresse",
+    "colis_endommage" to "Colis endommagé",
+    "refus_colis" to "Refus du colis",
+    "erreur_livraison" to "Erreur de livraison"
+)
 
 class DeliveryDetailViewModel(
     private val delivery: Delivery,
@@ -134,22 +160,53 @@ class DeliveryDetailViewModel(
         }
     }
 
-    // ── Signaler échec ──
+    // ── Signaler un problème ──
 
-    fun failDelivery() {
+    /** Ouvre le dialogue de sélection du motif */
+    fun openFailureDialog() {
+        _uiState.value = _uiState.value.copy(
+            showFailureDialog = true,
+            selectedFailureReason = "",
+            failureError = null
+        )
+    }
+
+    /** Ferme le dialogue sans agir */
+    fun closeFailureDialog() {
+        _uiState.value = _uiState.value.copy(
+            showFailureDialog = false,
+            selectedFailureReason = "",
+            failureError = null
+        )
+    }
+
+    /** Sélectionne un motif */
+    fun selectFailureReason(reason: String) {
+        _uiState.value = _uiState.value.copy(selectedFailureReason = reason)
+    }
+
+    /** Confirme et envoie l'échec avec le motif sélectionné */
+    fun confirmFailure() {
+        val reason = _uiState.value.selectedFailureReason
+        if (reason.isBlank()) return
+
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isFailing = true)
-            val result = deliveryRepository.failDelivery(delivery.id)
+            _uiState.value = _uiState.value.copy(isSubmittingFailure = true)
+            val result = deliveryRepository.failDelivery(delivery.id, reason)
             result.fold(
                 onSuccess = {
                     val updated = _uiState.value.delivery.copy(status = "failed")
-                    _uiState.value = _uiState.value.copy(delivery = updated, isFailing = false)
+                    _uiState.value = _uiState.value.copy(
+                        delivery = updated,
+                        isFailing = true,
+                        showFailureDialog = false,
+                        isSubmittingFailure = false
+                    )
                 },
                 onFailure = { error ->
                     _uiState.value = _uiState.value.copy(
-                        isFailing = false,
-                        validationResult = ValidationResult.Failure(error.message ?: "Impossible de signaler l'échec"),
-                        hasError = true
+                        isSubmittingFailure = false,
+                        failureError = error.message ?: "Erreur lors du signalement"
                     )
                 }
             )

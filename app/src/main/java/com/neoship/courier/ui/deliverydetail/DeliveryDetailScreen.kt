@@ -4,6 +4,8 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -115,8 +117,8 @@ fun DeliveryDetailScreen(
                     context = context,
                     snackbarHostState = snackbarHostState,
                     scope = scope,
-                    onFail = viewModel::failDelivery,
-                    isFailing = state.isFailing
+                    viewModel = viewModel,
+                    state = state
                 )
             }
 
@@ -589,8 +591,8 @@ private fun ActionButtonsInProgress(
     context: android.content.Context,
     snackbarHostState: SnackbarHostState,
     scope: kotlinx.coroutines.CoroutineScope,
-    onFail: () -> Unit,
-    isFailing: Boolean
+    viewModel: DeliveryDetailViewModel,
+    state: DeliveryDetailUiState
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Naviguer vers la destination
@@ -622,18 +624,18 @@ private fun ActionButtonsInProgress(
             Text("Naviguer vers la destination", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
         }
 
-        // Signaler un problème
+        // Signaler un problème — ouvre le dialogue
         OutlinedButton(
-            onClick = onFail,
+            onClick = { viewModel.openFailureDialog() },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
-            enabled = !isFailing,
+            enabled = !state.isSubmittingFailure,
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = MaterialTheme.colorScheme.error
             )
         ) {
-            if (isFailing) {
+            if (state.isSubmittingFailure) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
                 Text("Signalement…")
@@ -641,6 +643,116 @@ private fun ActionButtonsInProgress(
                 Icon(Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Signaler un problème", fontWeight = FontWeight.Medium)
+            }
+        }
+    }
+
+    // Dialogue de sélection du motif d'échec
+    if (state.showFailureDialog) {
+        FailureReasonDialog(
+            viewModel = viewModel,
+            state = state
+        )
+    }
+}
+
+// ────────────────────────────────────────────────────────────
+// DIALOGUE DE SÉLECTION DU MOTIF D'ÉCHEC
+// ────────────────────────────────────────────────────────────
+
+@Composable
+private fun FailureReasonDialog(
+    viewModel: DeliveryDetailViewModel,
+    state: DeliveryDetailUiState
+) {
+    // Overlay sombre pour focus
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // Fond sombre derrière la carte
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim))
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(24.dp),
+            elevation = CardDefaults.cardElevation(8.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Titre
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(24.dp))
+                    Text("Signaler un problème", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                }
+
+                Text(
+                    "Pour quel motif souhaitez-vous signaler cette course ?",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // Liste des motifs
+                FAILURE_REASONS.forEach { reason ->
+                    val label = FAILURE_REASONS_LABEL[reason] ?: reason
+                    val isSelected = state.selectedFailureReason == reason
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.fillMaxWidth().height(44.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp).clickable { viewModel.selectFailureReason(reason) },
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = { viewModel.selectFailureReason(reason) },
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                        }
+                    }
+                }
+
+                // Erreur
+                if (state.failureError != null) {
+                    Text(state.failureError, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
+
+                // Boutons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = viewModel::closeFailureDialog,
+                        modifier = Modifier.weight(1f).height(44.dp)
+                    ) { Text("Annuler") }
+
+                    Button(
+                        onClick = viewModel::confirmFailure,
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        enabled = !state.selectedFailureReason.isBlank() && !state.isSubmittingFailure,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        if (state.isSubmittingFailure) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Signalement…")
+                        } else {
+                            Text("Confirmer")
+                        }
+                    }
+                }
             }
         }
     }

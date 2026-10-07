@@ -88,9 +88,9 @@ class DeliveryRepository(
     /**
      * Marquer une course comme échouée : in_progress → failed.
      */
-    suspend fun failDelivery(deliveryId: String): Result<Unit> {
+    suspend fun failDelivery(deliveryId: String, reason: String = ""): Result<Unit> {
         return try {
-            val response = api.failDelivery(deliveryId)
+            val response = api.failDelivery(deliveryId, mapOf("reason" to reason))
             if (response.isSuccessful && response.body()?.success == true) {
                 Result.success(Unit)
             } else {
